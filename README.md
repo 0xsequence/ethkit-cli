@@ -4,14 +4,14 @@ ethkit cli
 ## Install
 
 ```
-go get github.com/0xsequence/ethkit-cli
+go install github.com/0xsequence/ethkit-cli@latest
 ```
 
 
 ## Usage
 
 ```shell
-$ ethkit --help
+$ ethkit-cli --help
 ```
 
 ```
