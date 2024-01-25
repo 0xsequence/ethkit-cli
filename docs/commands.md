@@ -18,7 +18,7 @@ Flags:
       --print-mnemonic    print wallet secret mnemonic from keyfile (danger!)
 ```
 
-### abigen
+## abigen
 
 `abigen` generates Go contract client code from a JSON [truffle](https://www.trufflesuite.com/)
 artifacts file.
@@ -37,7 +37,7 @@ Flags:
       --type string            type (optional)
 ```
 
-### artifacts
+## artifacts
 
 `artifacts` prints the contract ABI or bytecode from a user-supplied truffle artifacts file.
 
@@ -52,9 +52,11 @@ Flags:
   -h, --help          help for artifacts
 ```
 
-### balance
+## balance
 
 `balance` retrieves the balance of an account via RPC by a provided address at a predefined block height.
+It provides an implementation of the standard [eth_getBalance](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getbalance) JSON-RPC method.
+
 
 ```bash
 Usage:
@@ -67,9 +69,10 @@ Flags:
   -r, --rpc-url string   The RPC endpoint to the blockchain node to interact with
 ```
 
-### block
+## block
 
-`block` retrieves a block by a provided block height or tag via RPC
+`block` retrieves a block by a provided block height or tag via RPC.
+It provides an implementation of the standard [eth_getBlockByNumber](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getblockbynumber) JSON-RPC method.
 
 ```bash
 Usage:
@@ -84,4 +87,21 @@ Flags:
   -h, --help             help for block
   -j, --json             Print the block as JSON
 
+```
+
+## block-number
+
+`block-number` get the latest block number for a given blockchain network.
+It provides an implementation of the standard [eth_getBlockNumber](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_blocknumber) JSON-RPC method.
+
+```shell
+Usage:
+  ethkit block-number [flags]
+
+Aliases:
+  block-number, bn
+
+Flags:
+  -h, --help             help for block-number
+  -r, --rpc-url string   The RPC endpoint to the blockchain node to interact with
 ```
