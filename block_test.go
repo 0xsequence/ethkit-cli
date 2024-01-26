@@ -23,28 +23,40 @@ func execBlockCmd(args string) (string, error) {
 	return actual.String(), nil
 }
 
-func Test_BlockCmd(t *testing.T) {
+func Test_BlockCmd_ValidBlockHeight(t *testing.T) {
 	res, err := execBlockCmd("18855325 --rpc-url https://nodes.sequence.app/mainnet")
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
+func Test_BlockCmd_ValidBlockHash(t *testing.T) {
+	res, err := execBlockCmd("0x97e5c24dc2fd74f6e56773a0ad1cf29fe403130ca6ec1dd10ff8828d72b0a352 --rpc-url https://nodes.sequence.app/mainnet")
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 }
 
 func Test_BlockCmd_InvalidRpcUrl(t *testing.T) {
 	res, err := execBlockCmd("18855325 --rpc-url nodes.sequence.app/mainnet")
-	assert.Contains(t, err.Error(), "please provide a valid rpc url")
+	assert.Equal(t, err, ErrInvalidRpcUrl)
 	assert.Empty(t, res)
 }
 
 // Note: this test will eventually fail
-func Test_BlockCmd_NotFound(t *testing.T) {
+func Test_BlockCmd_NotFoundByHeight(t *testing.T) {
 	res, err := execBlockCmd(fmt.Sprint(math.MaxInt64) + " --rpc-url https://nodes.sequence.app/mainnet")
-	assert.Contains(t, err.Error(), "not found")
+	assert.Equal(t, err, ErrBlockNotFound)
 	assert.Empty(t, res)
 }
 
 func Test_BlockCmd_InvalidBlockHeight(t *testing.T) {
 	res, err := execBlockCmd("invalid --rpc-url https://nodes.sequence.app/mainnet")
-	assert.Contains(t, err.Error(), "invalid block height")
+	assert.Equal(t, err, ErrInvalidBlockInfo)
+	assert.Empty(t, res)
+}
+
+func Test_BlockCmd_NotFoundByHash(t *testing.T) {
+	res, err := execBlockCmd("0x97e5c24dc2fd74f6e56773a0ad1cf29fe403130ca6ec1dd10ff8828d72b0a351 --rpc-url https://nodes.sequence.app/mainnet")
+	assert.Equal(t, err, ErrBlockNotFound)
 	assert.Empty(t, res)
 }
 

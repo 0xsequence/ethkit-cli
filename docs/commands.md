@@ -57,7 +57,6 @@ Flags:
 `balance` retrieves the balance of an account via RPC by a provided address at a predefined block height.
 It provides an implementation of the standard [eth_getBalance](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getbalance) JSON-RPC method.
 
-
 ```bash
 Usage:
   ethkit-cli balance [account] [flags]
@@ -72,11 +71,11 @@ Flags:
 ## block
 
 `block` retrieves a block by a provided block height or tag via RPC.
-It provides an implementation of the standard [eth_getBlockByNumber](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getblockbynumber) JSON-RPC method.
+It provides an implementation of the standard [eth_getBlockByNumber](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getblockbynumber) and [eth_getBlockByHash](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getblockbyhash) JSON-RPC methods.
 
 ```bash
 Usage:
-  ethkit-cli block [number|tag] [flags]
+  ethkit-cli block [number|tag|hash] [flags]
 
 Aliases:
   block, bl
