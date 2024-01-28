@@ -1,4 +1,4 @@
-package main
+package balance
 
 import (
 	"context"
@@ -20,10 +20,6 @@ const (
 	flagBalanceEther = "ether"
 	flagBalanceRpcUrl = "rpc-url"
 )
-
-func init() {
-	rootCmd.AddCommand(NewBalanceCmd())
-}
 
 func NewBalanceCmd() *cobra.Command {
 	c := &balance{}
