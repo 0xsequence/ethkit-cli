@@ -1,4 +1,4 @@
-package main
+package block
 
 import (
 	"context"
@@ -14,10 +14,6 @@ import (
 const (
 	flagBlockNumberRpcUrl = "rpc-url"
 )
-
-func init() {
-	rootCmd.AddCommand(NewBlockNumberCmd())
-}
 
 func NewBlockNumberCmd() *cobra.Command {
 	c := &blockNumber{}
@@ -38,7 +34,7 @@ type blockNumber struct {
 }
 
 func (c *blockNumber) Run(cmd *cobra.Command, args []string) error {
-	fRpc, err := cmd.Flags().GetString(flagBalanceRpcUrl)
+	fRpc, err := cmd.Flags().GetString(flagBlockNumberRpcUrl)
 	if err != nil {
 		return err
 	}

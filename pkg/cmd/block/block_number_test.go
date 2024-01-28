@@ -1,17 +1,17 @@
-package main_test
+package block_test
 
 import (
 	"bytes"
 	"strings"
 	"testing"
 
-	app "github.com/0xsequence/ethkit-cli"
+	"github.com/0xsequence/ethkit-cli/pkg/cmd/block"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func execBlockNumberCmd(args string) (string, error) {
-	cmd := app.NewBlockNumberCmd()
+	cmd := block.NewBlockNumberCmd()
 	actual := new(bytes.Buffer)
 	cmd.SetOut(actual)
 	cmd.SetErr(actual)

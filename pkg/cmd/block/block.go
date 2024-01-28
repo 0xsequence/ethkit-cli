@@ -1,4 +1,4 @@
-package main
+package block
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/0xsequence/ethkit-cli/internal"
 	"github.com/0xsequence/ethkit/ethrpc"
 	"github.com/0xsequence/ethkit/go-ethereum/common"
 	"github.com/0xsequence/ethkit/go-ethereum/common/hexutil"
@@ -16,15 +17,11 @@ import (
 )
 
 const (
-	flagBlockField = "field"
-	flagBlockFull = "full"
+	flagBlockField  = "field"
+	flagBlockFull   = "full"
 	flagBlockRpcUrl = "rpc-url"
-	flagBlockJson = "json"
+	flagBlockJson   = "json"
 )
-
-func init() {
-	rootCmd.AddCommand(NewBlockCmd())
-}
 
 type block struct {
 }
@@ -68,7 +65,7 @@ func (c *block) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	if _, err = url.ParseRequestURI(fRpc); err != nil {
-		return ErrInvalidRpcUrl
+		return internal.ErrInvalidRpcUrl
 	}
 
 	provider, err := ethrpc.NewProvider(fRpc)
@@ -80,18 +77,18 @@ func (c *block) Run(cmd *cobra.Command, args []string) error {
 	if _, err := hexutil.Decode(fBlock); err == nil {
 		block, err = provider.BlockByHash(context.Background(), common.HexToHash(fBlock))
 		if err != nil {
-			return ErrBlockNotFound
+			return internal.ErrBlockNotFound
 		}
 	} else {
 		bh, err := strconv.ParseUint(fBlock, 10, 64)
 		if err != nil {
 			// TODO: implement support for all tags: earliest, latest, pending, finalized, safe
-			return ErrInvalidBlockInfo
+			return internal.ErrInvalidBlockInfo
 		}
-	
+
 		block, err = provider.BlockByNumber(context.Background(), big.NewInt(int64(bh)))
 		if err != nil {
-			return ErrBlockNotFound
+			return internal.ErrBlockNotFound
 		}
 	}
 
@@ -103,11 +100,11 @@ func (c *block) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	if fField != "" {
-		obj = GetValueByJSONTag(obj, fField)
+		obj = internal.GetValueByJSONTag(obj, fField)
 	}
 
 	if fJson {
-		json, err := PrettyJSON(obj)
+		json, err := internal.PrettyJSON(obj)
 		if err != nil {
 			return err
 		}
@@ -121,52 +118,52 @@ func (c *block) Run(cmd *cobra.Command, args []string) error {
 
 // Header is a customized block header for cli.
 type Header struct {
-	ParentHash       common.Hash        `json:"parentHash"`
-	UncleHash        common.Hash        `json:"sha3Uncles"`
-	Coinbase         common.Address     `json:"miner"`
-	Hash             common.Hash        `json:"hash"`
-	Root             common.Hash        `json:"stateRoot"`
-	TxHash           common.Hash        `json:"transactionsRoot"`
-	ReceiptHash      common.Hash        `json:"receiptsRoot"`
-	Bloom            types.Bloom        `json:"logsBloom"`
-	Difficulty       *big.Int           `json:"difficulty"`
-	Number           *big.Int           `json:"number"`
-	GasLimit         uint64             `json:"gasLimit"`
-	GasUsed          uint64             `json:"gasUsed"`
-	Time             uint64             `json:"timestamp"`
-	Extra            []byte             `json:"extraData"`
-	MixDigest        common.Hash        `json:"mixHash"`
-	Nonce            types.BlockNonce   `json:"nonce"`
-	BaseFee          *big.Int           `json:"baseFeePerGas"`
-	WithdrawalsHash  *common.Hash       `json:"withdrawalsRoot"`
-	Size             common.StorageSize `json:"size"`
+	ParentHash      common.Hash        `json:"parentHash"`
+	UncleHash       common.Hash        `json:"sha3Uncles"`
+	Coinbase        common.Address     `json:"miner"`
+	Hash            common.Hash        `json:"hash"`
+	Root            common.Hash        `json:"stateRoot"`
+	TxHash          common.Hash        `json:"transactionsRoot"`
+	ReceiptHash     common.Hash        `json:"receiptsRoot"`
+	Bloom           types.Bloom        `json:"logsBloom"`
+	Difficulty      *big.Int           `json:"difficulty"`
+	Number          *big.Int           `json:"number"`
+	GasLimit        uint64             `json:"gasLimit"`
+	GasUsed         uint64             `json:"gasUsed"`
+	Time            uint64             `json:"timestamp"`
+	Extra           []byte             `json:"extraData"`
+	MixDigest       common.Hash        `json:"mixHash"`
+	Nonce           types.BlockNonce   `json:"nonce"`
+	BaseFee         *big.Int           `json:"baseFeePerGas"`
+	WithdrawalsHash *common.Hash       `json:"withdrawalsRoot"`
+	Size            common.StorageSize `json:"size"`
 	// TODO: totalDifficulty to be implemented
 	// TotalDifficulty  *big.Int           `json:"totalDifficulty"`
-	TransactionsHash []common.Hash      `json:"transactions"`
+	TransactionsHash []common.Hash `json:"transactions"`
 }
 
 // NewHeader returns the custom-built Header object.
 func NewHeader(b *types.Block) *Header {
 	return &Header{
-		ParentHash:       b.Header().ParentHash,
-		UncleHash:        b.Header().UncleHash,
-		Coinbase:         b.Header().Coinbase,
-		Hash:             b.Hash(),
-		Root:             b.Header().Root,
-		TxHash:           b.Header().TxHash,
-		ReceiptHash:      b.ReceiptHash(),
-		Bloom:            b.Bloom(),
-		Difficulty:       b.Header().Difficulty,
-		Number:           b.Header().Number,
-		GasLimit:         b.Header().GasLimit,
-		GasUsed:          b.Header().GasUsed,
-		Time:             b.Header().Time,
-		Extra:            b.Header().Extra,
-		MixDigest:        b.Header().MixDigest,
-		Nonce:            b.Header().Nonce,
-		BaseFee:          b.Header().BaseFee,
-		WithdrawalsHash:  b.Header().WithdrawalsHash,
-		Size:             b.Size(),
+		ParentHash:      b.Header().ParentHash,
+		UncleHash:       b.Header().UncleHash,
+		Coinbase:        b.Header().Coinbase,
+		Hash:            b.Hash(),
+		Root:            b.Header().Root,
+		TxHash:          b.Header().TxHash,
+		ReceiptHash:     b.ReceiptHash(),
+		Bloom:           b.Bloom(),
+		Difficulty:      b.Header().Difficulty,
+		Number:          b.Header().Number,
+		GasLimit:        b.Header().GasLimit,
+		GasUsed:         b.Header().GasUsed,
+		Time:            b.Header().Time,
+		Extra:           b.Header().Extra,
+		MixDigest:       b.Header().MixDigest,
+		Nonce:           b.Header().Nonce,
+		BaseFee:         b.Header().BaseFee,
+		WithdrawalsHash: b.Header().WithdrawalsHash,
+		Size:            b.Size(),
 		// TotalDifficulty:  b.Difficulty(),
 		TransactionsHash: TransactionsHash(*b),
 	}
@@ -174,11 +171,11 @@ func NewHeader(b *types.Block) *Header {
 
 // String overrides the standard behavior for Header "to-string".
 func (h *Header) String() string {
-	var p Printable
+	var p internal.Printable
 	if err := p.FromStruct(h); err != nil {
 		panic(err)
 	}
-	s := p.Columnize(*NewPrintableFormat(20, 0, 0, byte(' ')))
+	s := p.Columnize(*internal.NewPrintableFormat(20, 0, 0, byte(' ')))
 
 	return s
 }
@@ -217,9 +214,9 @@ type Block struct {
 	Size            common.StorageSize `json:"size"`
 	// TODO: totalDifficulty to be implemented
 	// TotalDifficulty *big.Int           `json:"totalDifficulty"`
-	Uncles          []*types.Header    `json:"uncles"`
-	Transactions    types.Transactions `json:"transactions"`
-	Withdrawals     types.Withdrawals  `json:"withdrawals"`
+	Uncles       []*types.Header    `json:"uncles"`
+	Transactions types.Transactions `json:"transactions"`
+	Withdrawals  types.Withdrawals  `json:"withdrawals"`
 }
 
 // NewBlock returns the custom-built Block object.
@@ -245,20 +242,20 @@ func NewBlock(b *types.Block) *Block {
 		WithdrawalsHash: b.Header().WithdrawalsHash,
 		Size:            b.Size(),
 		// TotalDifficulty: b.Difficulty(),
-		Uncles:          b.Uncles(),
-		Transactions:    b.Transactions(),
+		Uncles:       b.Uncles(),
+		Transactions: b.Transactions(),
 		// TODO: Withdrawals is empty. To be fixed.
-		Withdrawals:     b.Withdrawals(),
+		Withdrawals: b.Withdrawals(),
 	}
 }
 
 // String overrides the standard behavior for Block "to-string".
 func (b *Block) String() string {
-	var p Printable
+	var p internal.Printable
 	if err := p.FromStruct(b); err != nil {
 		panic(err)
 	}
-	s := p.Columnize(*NewPrintableFormat(20, 0, 0, byte(' ')))
+	s := p.Columnize(*internal.NewPrintableFormat(20, 0, 0, byte(' ')))
 
 	return s
 }
