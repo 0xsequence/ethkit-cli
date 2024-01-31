@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -60,9 +61,9 @@ func (p *Printable) FromStruct(input any) error {
 func (p *Printable) Columnize(pf printableFormat) string {
 	var buf bytes.Buffer
 	w := tabwriter.NewWriter(&buf, pf.minwidth, pf.tabwidth, pf.padding, pf.padchar, tabwriter.Debug)
-	// NOTE: Order is not maintained whilst looping over map's . Results from different execution may differ.
-	for k, v := range *p {
-		printKeyValue(w, k, v)
+	keys := sortedKeys(*p)
+	for _, k := range keys {
+		printKeyValue(w, k, (*p)[k])
 	}
 	w.Flush()
 
@@ -71,7 +72,6 @@ func (p *Printable) Columnize(pf printableFormat) string {
 
 func printKeyValue(w *tabwriter.Writer, key string, value any) {
 	switch t := value.(type) {
-	// NOTE: Printable is not directly inferred as map[string]any therefore explicit reference is necessary
 	case map[string]any:
 		fmt.Fprintln(w, key, "\t")
 		for tk, tv := range t {
@@ -94,6 +94,16 @@ func printKeyValue(w *tabwriter.Writer, key string, value any) {
 		// custom format for numbers to avoid scientific notation
 		fmt.Fprintf(w, "%s\t %s\n", key, customFormat(value))
 	}
+}
+
+func sortedKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	return keys
 }
 
 func customFormat(value any) string {
@@ -119,7 +129,7 @@ func formatFloat(f any) string {
 }
 
 func base64ToHex(str any) any {
-	_, ok := str.(string); if !ok {
+	if _, ok := str.(string); ok {
 		return str
 	}
 	decoded, err := base64.StdEncoding.DecodeString(str.(string))

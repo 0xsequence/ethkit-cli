@@ -1,35 +1,32 @@
-ethkit cli
-==========
+# Ethkit CLI
+
+```text
+=========================================================================================
+________________________________/\\\_____________________________________________________
+________________________________\/\\\___________/\\\_____________________________________
+______________________/\\\_______\/\\\__________\/\\\___________/\\\______/\\\___________
+________/\\\\\\\\___/\\\\\\\\\\\__\/\\\__________\/\\\___ /\\___\///____/\\\\\\\\\\\_____
+_______/\\\         \////\\\////___\/\\\\\\\\\\___\/\\\_ /\\\___________\////\\\////_____
+_______/\\\\\\\\\\\_____\/\\\_______\/\\\/////\\\__\/\\\\\\_______\/\\\_____\/\\\________
+_______\//\\\            \/\\\_______\/\\\___\/\\\__\/\\\__\/\\\___\/\\\_____\/\\\_______
+________\//\\\\\\\\\\_____\//\\\\\____\/\\\___\/\\\__\/\\\__\/\\\___\/\\\_____\//\\\\\___
+_________\///////////______\//////_____\///____\///___\///___\///____\///______\/////____
+
+==================================== we <3 Ethereum =====================================
+```
+
+Ethkit CLI is a Go-written toolkit to test, build, launch and interact with any EVM-compatible blockchain networks.
 
 ## Install
 
-```
-go install github.com/0xsequence/ethkit-cli@latest
+```shell
+go install github.com/0xsequence/ethkit/cmd/ethkit-cli@latest
 ```
 
-
-## Usage
+## Run
 
 ```shell
-$ ethkit-cli --help
+ethkit-cli [command]
 ```
 
-```
-ethkit - Ethereum dev toolkit
-
-Usage:
-  ethkit [command]
-
-Available Commands:
-  abigen      generate contract client code from a truffle artifacts file
-  artifacts   print the contract abi or bytecode from a truffle artifacts file
-  help        Help about any command
-  version     print the version number
-  wallet      encrypted wallet creation+management
-
-Flags:
-  -h, --help   help for ethkit
-
-Use "ethkit [command] --help" for more information about a command
-```
-
+Refer to the help - `ek --help` for a comprehensive list of available commands or check out the [documentation section](./docs/commands.md).

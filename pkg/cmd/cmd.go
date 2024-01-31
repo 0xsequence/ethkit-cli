@@ -1,8 +1,14 @@
-package main
+package cmd
 
 import (
 	"fmt"
 	"os"
+
+	"github.com/0xsequence/ethkit-cli/pkg/cmd/abigen"
+	"github.com/0xsequence/ethkit-cli/pkg/cmd/artifacts"
+	"github.com/0xsequence/ethkit-cli/pkg/cmd/balance"
+	"github.com/0xsequence/ethkit-cli/pkg/cmd/block"
+	"github.com/0xsequence/ethkit-cli/pkg/cmd/wallet"
 
 	"github.com/spf13/cobra"
 )
@@ -12,35 +18,40 @@ var (
 	GITBRANCH     = "branch"
 	GITCOMMIT     = "last commit"
 	GITCOMMITDATE = "last change"
-)
 
-var rootCmd = &cobra.Command{
-	Use:   "ethkit",
-	Short: "ethkit - Ethereum dev toolkit",
-	Long:  banner(),
-	Args:  cobra.MinimumNArgs(1),
-	CompletionOptions: cobra.CompletionOptions{
-		HiddenDefaultCmd: true,
-	},
-}
+	rootCmd = &cobra.Command{
+		Use:   "ethkit",
+		Aliases: []string{"ek"},
+		Short: "ethkit - Ethereum dev toolkit",
+		Long:  banner(),
+		Args:  cobra.MinimumNArgs(1),
+		CompletionOptions: cobra.CompletionOptions{
+			HiddenDefaultCmd: true,
+		},
+	}
 
-func init() {
-	var versionCmd = &cobra.Command{
+	versionCmd = &cobra.Command{
 		Use:   "version",
 		Short: "print the version number",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("ethkit", version())
 		},
 	}
+)
 
-	rootCmd.AddCommand(versionCmd)
+// Execute executes the root command.
+func Execute() error {
+	return rootCmd.Execute()
 }
 
-func main() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+func init() {
+	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(abigen.NewAbigenCmd())
+	rootCmd.AddCommand(artifacts.NewArtifactsCmd())
+	rootCmd.AddCommand(balance.NewBalanceCmd())
+	rootCmd.AddCommand(block.NewBlockCmd())
+	rootCmd.AddCommand(block.NewBlockNumberCmd())
+	rootCmd.AddCommand(wallet.NewWalletCmd())
 }
 
 func help(cmd *cobra.Command) {

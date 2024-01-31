@@ -1,4 +1,4 @@
-package main
+package internal_test
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsequence/ethkit-cli/internal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -45,7 +46,7 @@ var (
 
 	s        string
 	rows     []string
-	p        Printable
+	p        internal.Printable
 	minwidth = 24
 	tabwidth = 0
 	padding  = 0
@@ -61,7 +62,7 @@ func setup() {
 	if err := p.FromStruct(complex); err != nil {
 		panic(err)
 	}
-	s = p.Columnize(*NewPrintableFormat(minwidth, tabwidth, padding, padchar))
+	s = p.Columnize(*internal.NewPrintableFormat(minwidth, tabwidth, padding, padchar))
 	fmt.Println(s)
 	rows = strings.Split(s, "\n")
 }
@@ -85,11 +86,11 @@ func Test_Columnize(t *testing.T) {
 func Test_GetValueByJSONTag(t *testing.T) {
 	setup()
 	tag := "title"
-	assert.Equal(t, GetValueByJSONTag(complex, tag), complex.Nested.Title)
+	assert.Equal(t, internal.GetValueByJSONTag(complex, tag), complex.Nested.Title)
 }
 
 func Test_GetValueByJSONTag_FailWhenNotStruct(t *testing.T) {
 	setup()
 	tag := "title"
-	assert.Nil(t, GetValueByJSONTag(p, tag))
+	assert.Nil(t, internal.GetValueByJSONTag(p, tag))
 }
