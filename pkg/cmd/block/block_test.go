@@ -1,4 +1,4 @@
-package main
+package block_test
 
 import (
 	"bytes"
@@ -6,12 +6,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsequence/ethkit-cli/internal"
+	"github.com/0xsequence/ethkit-cli/pkg/cmd/block"
 	"github.com/0xsequence/ethkit/go-ethereum/common/math"
 	"github.com/stretchr/testify/assert"
 )
 
 func execBlockCmd(args string) (string, error) {
-	cmd := NewBlockCmd()
+	cmd := block.NewBlockCmd()
 	actual := new(bytes.Buffer)
 	cmd.SetOut(actual)
 	cmd.SetErr(actual)
@@ -23,36 +25,48 @@ func execBlockCmd(args string) (string, error) {
 	return actual.String(), nil
 }
 
-func Test_BlockCmd(t *testing.T) {
+func Test_BlockCmd_ValidBlockHeight(t *testing.T) {
 	res, err := execBlockCmd("18855325 --rpc-url https://nodes.sequence.app/mainnet")
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
+func Test_BlockCmd_ValidBlockHash(t *testing.T) {
+	res, err := execBlockCmd("0x97e5c24dc2fd74f6e56773a0ad1cf29fe403130ca6ec1dd10ff8828d72b0a352 --rpc-url https://nodes.sequence.app/mainnet")
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
 }
 
 func Test_BlockCmd_InvalidRpcUrl(t *testing.T) {
 	res, err := execBlockCmd("18855325 --rpc-url nodes.sequence.app/mainnet")
-	assert.Contains(t, err.Error(), "please provide a valid rpc url")
+	assert.Equal(t, err, internal.ErrInvalidRpcUrl)
 	assert.Empty(t, res)
 }
 
 // Note: this test will eventually fail
-func Test_BlockCmd_NotFound(t *testing.T) {
+func Test_BlockCmd_NotFoundByHeight(t *testing.T) {
 	res, err := execBlockCmd(fmt.Sprint(math.MaxInt64) + " --rpc-url https://nodes.sequence.app/mainnet")
-	assert.Contains(t, err.Error(), "not found")
+	assert.Equal(t, err, internal.ErrBlockNotFound)
 	assert.Empty(t, res)
 }
 
 func Test_BlockCmd_InvalidBlockHeight(t *testing.T) {
 	res, err := execBlockCmd("invalid --rpc-url https://nodes.sequence.app/mainnet")
-	assert.Contains(t, err.Error(), "invalid block height")
+	assert.Equal(t, err, internal.ErrInvalidBlockInfo)
+	assert.Empty(t, res)
+}
+
+func Test_BlockCmd_NotFoundByHash(t *testing.T) {
+	res, err := execBlockCmd("0x97e5c24dc2fd74f6e56773a0ad1cf29fe403130ca6ec1dd10ff8828d72b0a351 --rpc-url https://nodes.sequence.app/mainnet")
+	assert.Equal(t, err, internal.ErrBlockNotFound)
 	assert.Empty(t, res)
 }
 
 func Test_BlockCmd_HeaderValidJSON(t *testing.T) {
 	res, err := execBlockCmd("18855325 --rpc-url https://nodes.sequence.app/mainnet --json")
 	assert.Nil(t, err)
-	h := Header{}
-	var p Printable
+	h := block.Header{}
+	var p internal.Printable
 	_ = p.FromStruct(h)
 	for k := range p {
 		assert.Contains(t, res, k)
@@ -62,8 +76,8 @@ func Test_BlockCmd_HeaderValidJSON(t *testing.T) {
 func Test_BlockCmd_BlockValidJSON(t *testing.T) {
 	res, err := execBlockCmd("18855325 --rpc-url https://nodes.sequence.app/mainnet --full --json")
 	assert.Nil(t, err)
-	h := Block{}
-	var p Printable
+	h := block.Block{}
+	var p internal.Printable
 	_ = p.FromStruct(h)
 	for k := range p {
 		assert.Contains(t, res, k)

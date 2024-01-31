@@ -1,11 +1,10 @@
-package main
+package wallet
 
 import (
 	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"syscall"
@@ -13,16 +12,17 @@ import (
 	"github.com/0xsequence/ethkit/ethwallet"
 	"github.com/0xsequence/ethkit/go-ethereum/accounts/keystore"
 	"github.com/0xsequence/ethkit/go-ethereum/common"
+
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
-func init() {
+func NewWalletCmd() *cobra.Command {
 	wallet := &wallet{}
 	cmd := &cobra.Command{
 		Use:   "wallet",
 		Short: "EOA wallet",
-		Run:   wallet.Run,
+		RunE:  wallet.Run,
 	}
 
 	cmd.Flags().String("keyfile", "", "wallet key file path")
@@ -33,7 +33,7 @@ func init() {
 	cmd.Flags().Bool("import-mnemonic", false, "import a secret mnemonic to a new keyfile")
 	cmd.Flags().String("path", "", fmt.Sprintf("set derivation path, default: %s", ethwallet.DefaultWalletOptions.DerivationPath))
 
-	rootCmd.AddCommand(cmd)
+	return cmd
 }
 
 type wallet struct {
@@ -51,7 +51,7 @@ type wallet struct {
 	wallet  *ethwallet.Wallet
 }
 
-func (c *wallet) Run(cmd *cobra.Command, args []string) {
+func (c *wallet) Run(cmd *cobra.Command, args []string) error {
 	c.fKeyFile, _ = cmd.Flags().GetString("keyfile")
 	c.fCreateNew, _ = cmd.Flags().GetBool("new")
 	c.fPrintAccount, _ = cmd.Flags().GetBool("print-account")
@@ -61,38 +61,31 @@ func (c *wallet) Run(cmd *cobra.Command, args []string) {
 	c.fPath, _ = cmd.Flags().GetString("path")
 
 	if c.fKeyFile == "" {
-		fmt.Println("error: please pass --keyfile")
-		help(cmd)
-		return
+		return errors.New("error: please pass --keyfile")
 	}
 	if fileExists(c.fKeyFile) && (c.fCreateNew || c.fImportMnemonic) {
-		fmt.Println("error: keyfile already exists on this filename, for safety we do not overwrite existing keyfiles.")
-		help(cmd)
-		return
+		return errors.New("error: keyfile already exists on this filename, for safety we do not overwrite existing keyfiles.")
 	}
 	if !c.fCreateNew && !c.fImportMnemonic && !c.fPrintMnemonic && !c.fPrintPrivateKey && !c.fPrintAccount {
-		fmt.Println("error: not enough options provided to ethkit cli.")
-		help(cmd)
-		return
+		return errors.New("error: not enough options provided to ethkit cli.")
 	}
 
 	// Gen new wallet
 	if c.fCreateNew || c.fImportMnemonic {
 		if err := c.createNew(); err != nil {
-			log.Fatal(err)
+			return err
 		}
-		return
 	}
 
 	// Load wallet from the key file
 	data, err := os.ReadFile(c.fKeyFile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	keyFile := walletKeyFile{}
 	err = json.Unmarshal(data, &keyFile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	c.keyFile = keyFile
 
@@ -103,43 +96,42 @@ func (c *wallet) Run(cmd *cobra.Command, args []string) {
 
 	pw, err := readSecretInput("Password: ")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	cipherText, err := keystore.DecryptDataV3(c.keyFile.Crypto, string(pw))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	wallet, err := ethwallet.NewWalletFromMnemonic(string(cipherText), derivationPath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	c.wallet = wallet
 
 	// Print mnemonic
 	if c.fPrintMnemonic {
 		if err := c.printMnemonic(); err != nil {
-			log.Fatal(err)
+			return err
 		}
-		return
 	}
 
 	// Print private key
 	if c.fPrintPrivateKey {
 		if err := c.printPrivateKey(); err != nil {
-			log.Fatal(err)
+			return err
 		}
-		return
 	}
 
 	// Print acconut address
 	if c.fPrintAccount {
 		if err := c.printAccount(); err != nil {
-			log.Fatal(err)
+			return err
 		}
-		return
 	}
+
+	return nil
 }
 
 func (c *wallet) printMnemonic() error {
@@ -216,7 +208,7 @@ func (c *wallet) createNew() error {
 		Address: c.wallet.Address(),
 		Path:    c.wallet.HDNode().DerivationPath().String(),
 		Crypto:  cryptoJSON,
-		Client:  fmt.Sprintf("ethkit/%s - github.com/0xsequence/ethkit", VERSION),
+		Client:  fmt.Sprint("ethkit/%s - github.com/0xsequence/ethkit"),
 	}
 
 	data, err := json.MarshalIndent(keyFile, "", "  ")
@@ -261,7 +253,7 @@ func fileExists(filename string) bool {
 
 func readSecretInput(prompt string) ([]byte, error) {
 	fmt.Print(prompt)
-	password, err := terminal.ReadPassword(int(syscall.Stdin))
+	password, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return nil, err
 	}
