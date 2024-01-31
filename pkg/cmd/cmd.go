@@ -8,6 +8,7 @@ import (
 	"github.com/0xsequence/ethkit-cli/pkg/cmd/artifacts"
 	"github.com/0xsequence/ethkit-cli/pkg/cmd/balance"
 	"github.com/0xsequence/ethkit-cli/pkg/cmd/block"
+	"github.com/0xsequence/ethkit-cli/pkg/cmd/tx"
 	"github.com/0xsequence/ethkit-cli/pkg/cmd/wallet"
 
 	"github.com/spf13/cobra"
@@ -20,11 +21,11 @@ var (
 	GITCOMMITDATE = "last change"
 
 	rootCmd = &cobra.Command{
-		Use:   "ethkit",
+		Use:     "ethkit",
 		Aliases: []string{"ek"},
-		Short: "ethkit - Ethereum dev toolkit",
-		Long:  banner(),
-		Args:  cobra.MinimumNArgs(1),
+		Short:   "ethkit - Ethereum dev toolkit",
+		Long:    banner(),
+		Args:    cobra.MinimumNArgs(1),
 		CompletionOptions: cobra.CompletionOptions{
 			HiddenDefaultCmd: true,
 		},
@@ -51,6 +52,7 @@ func init() {
 	rootCmd.AddCommand(balance.NewBalanceCmd())
 	rootCmd.AddCommand(block.NewBlockCmd())
 	rootCmd.AddCommand(block.NewBlockNumberCmd())
+	rootCmd.AddCommand(tx.NewTxCmd())
 	rootCmd.AddCommand(wallet.NewWalletCmd())
 }
 
