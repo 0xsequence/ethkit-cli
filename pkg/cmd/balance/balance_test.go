@@ -1,4 +1,4 @@
-package main
+package balance_test
 
 import (
 	"bytes"
@@ -8,11 +8,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/0xsequence/ethkit-cli/pkg/cmd/balance"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func execBalanceCmd(args string) (string, error) {
-	cmd := NewBalanceCmd()
+	cmd := balance.NewBalanceCmd()
 	actual := new(bytes.Buffer)
 	cmd.SetOut(actual)
 	cmd.SetErr(actual)

@@ -1,6 +1,7 @@
-package main
+package abigen
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -11,12 +12,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
+func NewAbigenCmd() *cobra.Command {
 	abigen := &abigen{}
 	cmd := &cobra.Command{
 		Use:   "abigen",
 		Short: "Generate contract Go client code from an abi or truffle artifacts file",
-		Run:   abigen.Run,
+		RunE:   abigen.Run,
 	}
 
 	cmd.Flags().String("artifactsFile", "", "path to truffle contract artifacts file")
@@ -27,7 +28,7 @@ func init() {
 	cmd.Flags().String("outFile", "", "outFile (optional), default=stdout")
 	cmd.Flags().Bool("includeDeployed", false, "include deployed bytecode on the generated file")
 
-	rootCmd.AddCommand(cmd)
+	return cmd
 }
 
 type abigen struct {
@@ -39,7 +40,7 @@ type abigen struct {
 	fIncludeDeployed bool
 }
 
-func (c *abigen) Run(cmd *cobra.Command, args []string) {
+func (c *abigen) Run(cmd *cobra.Command, args []string) error {
 	c.fArtifactsFile, _ = cmd.Flags().GetString("artifactsFile")
 	c.fAbiFile, _ = cmd.Flags().GetString("abiFile")
 	c.fPkg, _ = cmd.Flags().GetString("pkg")
@@ -48,20 +49,14 @@ func (c *abigen) Run(cmd *cobra.Command, args []string) {
 	c.fIncludeDeployed, _ = cmd.Flags().GetBool("includeDeployed")
 
 	if c.fArtifactsFile == "" && c.fAbiFile == "" {
-		fmt.Println("error: please pass one of --artifactsFile or --abiFile")
-		help(cmd)
-		return
+		return errors.New("error: please pass one of --artifactsFile or --abiFile")
 	}
 
 	if c.fAbiFile != "" && c.fPkg == "" {
-		fmt.Println("error: please pass --pkg")
-		help(cmd)
-		return
+		return errors.New("error: please pass --pkg")
 	}
 	if c.fAbiFile != "" && c.fType == "" {
-		fmt.Println("error: please pass --pkg")
-		help(cmd)
-		return
+		return errors.New("error: please pass --pkg")
 	}
 
 	var artifact ethartifact.RawArtifact
@@ -70,22 +65,21 @@ func (c *abigen) Run(cmd *cobra.Command, args []string) {
 	if c.fArtifactsFile != "" {
 		artifact, err = ethartifact.ParseArtifactFile(c.fArtifactsFile)
 		if err != nil {
-			log.Fatal(err)
-			return
+			return err
 		}
 	} else {
 		abiData, err := os.ReadFile(c.fAbiFile)
 		if err != nil {
-			log.Fatal(err)
-			return
+			return err
 		}
 		artifact = ethartifact.RawArtifact{ABI: abiData}
 	}
 
 	if err := c.generateGo(artifact); err != nil {
-		log.Fatal(err)
-		return
+		return err
 	}
+
+	return nil
 }
 
 func (c *abigen) generateGo(artifact ethartifact.RawArtifact) error {
