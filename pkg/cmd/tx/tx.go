@@ -8,7 +8,6 @@ import (
 	"log"
 	"math/big"
 	"net/url"
-	"regexp"
 	"strconv"
 
 	"github.com/0xsequence/ethkit-cli/internal"
@@ -260,7 +259,7 @@ func (tx *rpcTransaction) UnmarshalJSON(msg []byte) error {
 
 // RawTransactionByHash retrieves an rpc transaction by its hash via rpc client using the standard eth_getTransactionByHash ethereum JSON-RPC call
 func RawTransactionByHash(client *rpc.Client, ctx context.Context, hash string) (*rpcTransaction, error) {
-	if !isValidHash(hash) {
+	if !internal.IsValidHash(hash) {
 		return nil, internal.ErrInvalidHash
 	}
 
@@ -269,7 +268,7 @@ func RawTransactionByHash(client *rpc.Client, ctx context.Context, hash string) 
 
 // TransactionByBlockHashAndIndex retrieves an rpc transaction via rpc client by the hash of the block is contained in and the position (index) in that block using the standard eth_getTransactionByBlockHashAndIndex ethereum JSON-RPC call
 func TransactionByBlockHashAndIndex(client *rpc.Client, ctx context.Context, blockHash, index string) (*rpcTransaction, error) {
-	if !(isValidHash(blockHash) && isNumeric(index)) {
+	if !(internal.IsValidHash(blockHash) && internal.IsInt(index)) {
 		return nil, internal.ErrCmdInvalidArgs
 	}
 	i, _ := strconv.Atoi(index)
@@ -279,7 +278,7 @@ func TransactionByBlockHashAndIndex(client *rpc.Client, ctx context.Context, blo
 
 // TransactionByBlockNumberAndIndex retrieves an rpc transaction via rpc client by the number of the block is contained in and the position (index) in that block using the standard eth_getTransactionByBlockNumberAndIndex ethereum JSON-RPC call
 func TransactionByBlockNumberAndIndex(client *rpc.Client, ctx context.Context, blockNumber, index string) (*rpcTransaction, error) {
-	if !(isNumeric(blockNumber) && isNumeric(index)) {
+	if !(internal.IsInt(blockNumber) && internal.IsInt(index)) {
 		return nil, internal.ErrCmdInvalidArgs
 	}
 	bn, _ := strconv.Atoi(blockNumber)
@@ -307,33 +306,23 @@ type cmdArgs struct {
 }
 
 func setCmdArgs(args []string) (*cmdArgs, error) {
-	if isValidHash(args[0]) && isNumeric(args[1]) {
+	if internal.IsValidHash(args[0]) && internal.IsInt(args[1]) {
 		return &cmdArgs{blockHash: &args[0], index: &args[1]}, nil
 	}
-	if isNumeric(args[0]) {
-		if isNumeric(args[1]) {
+	if internal.IsInt(args[0]) {
+		if internal.IsInt(args[1]) {
 			// assumption: blockNumber > txIndex
 			if args[0] > args[1] {
 				return &cmdArgs{blockNumber: &args[0], index: &args[1]}, nil
 			}
 			return &cmdArgs{blockNumber: &args[1], index: &args[0]}, nil
 		}
-		if isValidHash(args[1]) {
+		if internal.IsValidHash(args[1]) {
 			return &cmdArgs{blockHash: &args[1], index: &args[0]}, nil
 		}
 	}
 
 	return nil, internal.ErrCmdInvalidArgs
-}
-
-func isValidHash(str string) bool {
-	matched, _ := regexp.MatchString("^0x([A-Fa-f0-9]{64})$", str)
-	return matched
-}
-
-func isNumeric(str string) bool {
-	_, err := strconv.Atoi(str)
-	return err == nil
 }
 
 func signatures(tx *types.Transaction) [3]*big.Int {
