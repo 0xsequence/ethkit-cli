@@ -76,6 +76,23 @@ func Test_TxCmd_ValidBlockNumberAndTxIndexInverted(t *testing.T) {
 	assert.Equal(t, txobj.Hash.String(), successTxHash)
 }
 
+func Test_TxCmd_AllQueryResultsAreEqual(t *testing.T) {
+	byHash, _ := execTxCmd(successTxHash + " --rpc-url https://nodes.sequence.app/mainnet --json")
+	byBlockHashAndIndex, _ := execTxCmd(blockHash + " " + txIndex + " --rpc-url https://nodes.sequence.app/mainnet --json")
+	byIndexAndBlockHash, _ := execTxCmd(txIndex + " " + blockHash + " --rpc-url https://nodes.sequence.app/mainnet --json")
+	byBlockNumberAndIndex, _ := execTxCmd(blockNumber + " " + txIndex + " --rpc-url https://nodes.sequence.app/mainnet --json")
+	byIndexAndBlockNumber, _ := execTxCmd(txIndex + " " + blockNumber + " --rpc-url https://nodes.sequence.app/mainnet --json")
+	assert.NotNil(t, byHash)
+	assert.NotNil(t, byBlockHashAndIndex)
+	assert.NotNil(t, byIndexAndBlockHash)
+	assert.NotNil(t, byBlockNumberAndIndex)
+	assert.NotNil(t, byIndexAndBlockNumber)
+	assert.Equal(t, byHash, byBlockHashAndIndex)
+	assert.Equal(t, byHash, byIndexAndBlockHash)
+	assert.Equal(t, byHash, byBlockNumberAndIndex)
+	assert.Equal(t, byHash, byIndexAndBlockNumber)
+}
+
 func Test_TxCmd_InvalidTxHash(t *testing.T) {
 	res, err := execTxCmd(successTxHash[:len(successTxHash)-1] + " --rpc-url https://nodes.sequence.app/mainnet")
 	assert.Equal(t, err, internal.ErrInvalidHash)
