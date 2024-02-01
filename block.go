@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/0xsequence/ethkit/ethrpc"
 	"github.com/0xsequence/ethkit/go-ethereum/common"
+	"github.com/0xsequence/ethkit/go-ethereum/common/hexutil"
 	"github.com/0xsequence/ethkit/go-ethereum/core/types"
 )
 
@@ -33,7 +33,7 @@ type block struct {
 func NewBlockCmd() *cobra.Command {
 	c := &block{}
 	cmd := &cobra.Command{
-		Use:     "block [number|tag]",
+		Use:     "block [number|tag|hash]",
 		Short:   "Get the information about the block",
 		Aliases: []string{"bl"},
 		Args:    cobra.ExactArgs(1),
@@ -68,7 +68,7 @@ func (c *block) Run(cmd *cobra.Command, args []string) error {
 	}
 
 	if _, err = url.ParseRequestURI(fRpc); err != nil {
-		return errors.New("error: please provide a valid rpc url (e.g. https://nodes.sequence.app/mainnet)")
+		return ErrInvalidRpcUrl
 	}
 
 	provider, err := ethrpc.NewProvider(fRpc)
@@ -76,15 +76,23 @@ func (c *block) Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	bh, err := strconv.ParseUint(fBlock, 10, 64)
-	if err != nil {
-		// TODO: implement support for all tags: earliest, latest, pending, finalized, safe
-		return errors.New("error: invalid block height")
-	}
-
-	block, err := provider.BlockByNumber(context.Background(), big.NewInt(int64(bh)))
-	if err != nil {
-		return err
+	var block *types.Block
+	if _, err := hexutil.Decode(fBlock); err == nil {
+		block, err = provider.BlockByHash(context.Background(), common.HexToHash(fBlock))
+		if err != nil {
+			return ErrBlockNotFound
+		}
+	} else {
+		bh, err := strconv.ParseUint(fBlock, 10, 64)
+		if err != nil {
+			// TODO: implement support for all tags: earliest, latest, pending, finalized, safe
+			return ErrInvalidBlockInfo
+		}
+	
+		block, err = provider.BlockByNumber(context.Background(), big.NewInt(int64(bh)))
+		if err != nil {
+			return ErrBlockNotFound
+		}
 	}
 
 	var obj any

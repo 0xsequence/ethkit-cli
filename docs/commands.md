@@ -71,11 +71,12 @@ Flags:
 ## block
 
 `block` retrieves a block by a provided block height or tag via RPC.
-It provides an implementation of the standard [eth_getBlockByNumber](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getblockbynumber) JSON-RPC method.
+
+It provides an implementation of the standard [eth_getBlockByNumber](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getblockbynumber) and [eth_getBlockByHash](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getblockbyhash) JSON-RPC methods.
 
 ```bash
 Usage:
-  ethkit-cli block [number|tag] [flags]
+  ethkit-cli block [number|tag|hash] [flags]
 
 Aliases:
   block, bl
@@ -91,6 +92,7 @@ Flags:
 ## block-number
 
 `block-number` get the latest block number for a given blockchain network.
+
 It provides an implementation of the standard [eth_getBlockNumber](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_blocknumber) JSON-RPC method.
 
 ```shell
