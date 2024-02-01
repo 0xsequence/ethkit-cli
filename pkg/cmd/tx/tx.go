@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"math/big"
 	"net/url"
+	"regexp"
+	"strconv"
 
 	"github.com/0xsequence/ethkit-cli/internal"
 	"github.com/0xsequence/ethkit/go-ethereum"
@@ -36,10 +37,10 @@ type tx struct {
 func NewTxCmd() *cobra.Command {
 	c := &tx{}
 	cmd := &cobra.Command{
-		Use:     "tx [hash]",
+		Use:     "tx [hash] | [blockNumber] [txIndex] | [blockHash] [txIndex]",
 		Short:   "Get the information about the transaction",
 		Aliases: []string{"t"},
-		Args:    cobra.ExactArgs(1),
+		Args:    cobra.RangeArgs(1, 2),
 		RunE:    c.Run,
 	}
 
@@ -54,7 +55,6 @@ func NewTxCmd() *cobra.Command {
 
 // Run executes the command
 func (c *tx) Run(cmd *cobra.Command, args []string) error {
-	fHash := cmd.Flags().Args()[0]
 	fRaw, err := cmd.Flags().GetBool(flagTxRaw)
 	if err != nil {
 		return err
@@ -84,23 +84,37 @@ func (c *tx) Run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	var rawtx *rpcTransaction
-	if _, err := hexutil.Decode(fHash); err == nil {
-		rawtx, err = RawTransactionByHash(rpcClient, context.Background(), common.HexToHash(fHash))
-		if err != nil {
-			return err
-		}
-	} else {
-		return internal.ErrInvalidHash
-	}
-
-	tx := NewTransaction(rawtx)
-
 	ethClient, err := ethclient.Dial(fRpc)
 	if err != nil {
 		return err
 	}
+
+	var rawtx *rpcTransaction
+	if len(cmd.Flags().Args()) == 1 {
+		rawtx, err = RawTransactionByHash(rpcClient, context.Background(), cmd.Flags().Args()[0])
+		if err != nil {
+			return err
+		}
+	} else {
+		cmdArgs, err := setCmdArgs(cmd.Flags().Args())
+		if err != nil {
+			return err
+		}
+
+		if cmdArgs.blockHash == nil {
+			rawtx, err = TransactionByBlockNumberAndIndex(rpcClient, context.Background(), *cmdArgs.blockNumber, *cmdArgs.index)
+			if err != nil {
+				return err
+			}
+		} else {
+			rawtx, err = TransactionByBlockHashAndIndex(rpcClient, context.Background(), *cmdArgs.blockHash, *cmdArgs.index)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	tx := NewTransaction(rawtx)
 
 	receipt, err := tx.TransactionReceipt(ethClient, tx.Hash)
 	if err != nil {
@@ -245,18 +259,81 @@ func (tx *rpcTransaction) UnmarshalJSON(msg []byte) error {
 }
 
 // RawTransactionByHash retrieves an rpc transaction by its hash via rpc client using the standard eth_getTransactionByHash ethereum JSON-RPC call
-func RawTransactionByHash(client *rpc.Client, ctx context.Context, hash common.Hash) (tx *rpcTransaction, err error) {
+func RawTransactionByHash(client *rpc.Client, ctx context.Context, hash string) (*rpcTransaction, error) {
+	if !isValidHash(hash) {
+		return nil, internal.ErrInvalidHash
+	}
+
+	return callContext(client, ctx, "eth_getTransactionByHash", common.HexToHash(hash))
+}
+
+// TransactionByBlockHashAndIndex retrieves an rpc transaction via rpc client by the hash of the block is contained in and the position (index) in that block using the standard eth_getTransactionByBlockHashAndIndex ethereum JSON-RPC call
+func TransactionByBlockHashAndIndex(client *rpc.Client, ctx context.Context, blockHash, index string) (*rpcTransaction, error) {
+	if !(isValidHash(blockHash) && isNumeric(index)) {
+		return nil, internal.ErrCmdInvalidArgs
+	}
+	i, _ := strconv.Atoi(index)
+
+	return callContext(client, ctx, "eth_getTransactionByBlockHashAndIndex", common.HexToHash(blockHash), hexutil.Uint(i))
+}
+
+// TransactionByBlockNumberAndIndex retrieves an rpc transaction via rpc client by the number of the block is contained in and the position (index) in that block using the standard eth_getTransactionByBlockNumberAndIndex ethereum JSON-RPC call
+func TransactionByBlockNumberAndIndex(client *rpc.Client, ctx context.Context, blockNumber, index string) (*rpcTransaction, error) {
+	if !(isNumeric(blockNumber) && isNumeric(index)) {
+		return nil, internal.ErrCmdInvalidArgs
+	}
+	bn, _ := strconv.Atoi(blockNumber)
+	i, _ := strconv.Atoi(index)
+
+	return callContext(client, ctx, "eth_getTransactionByBlockNumberAndIndex", hexutil.Uint(i), hexutil.Uint(bn))
+}
+
+func callContext(client *rpc.Client, ctx context.Context, method string, args ...any) (*rpcTransaction, error) {
 	var json *rpcTransaction
-	err = client.CallContext(ctx, &json, "eth_getTransactionByHash", hash)
+	err := client.CallContext(ctx, &json, method, args...)
 	if err != nil {
 		return nil, err
 	} else if json == nil {
-		return nil, ethereum.NotFound
+		return nil, internal.ErrTxNotFound
 	} else if _, r, _ := json.tx.RawSignatureValues(); r == nil {
-		return nil, errors.New("server returned transaction without signature")
+		return nil, internal.ErrTxWithoutSignature
 	}
 
 	return json, nil
+}
+
+type cmdArgs struct {
+	blockHash, blockNumber, index *string
+}
+
+func setCmdArgs(args []string) (*cmdArgs, error) {
+	if isValidHash(args[0]) && isNumeric(args[1]) {
+		return &cmdArgs{blockHash: &args[0], index: &args[1]}, nil
+	}
+	if isNumeric(args[0]) {
+		if isNumeric(args[1]) {
+			// assumption: blockNumber > txIndex
+			if args[0] > args[1] {
+				return &cmdArgs{blockNumber: &args[0], index: &args[1]}, nil
+			}
+			return &cmdArgs{blockNumber: &args[1], index: &args[0]}, nil
+		}
+		if isValidHash(args[1]) {
+			return &cmdArgs{blockHash: &args[1], index: &args[0]}, nil
+		}
+	}
+
+	return nil, internal.ErrCmdInvalidArgs
+}
+
+func isValidHash(str string) bool {
+	matched, _ := regexp.MatchString("^0x([A-Fa-f0-9]{64})$", str)
+	return matched
+}
+
+func isNumeric(str string) bool {
+	_, err := strconv.Atoi(str)
+	return err == nil
 }
 
 func signatures(tx *types.Transaction) [3]*big.Int {
