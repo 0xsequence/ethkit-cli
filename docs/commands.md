@@ -57,7 +57,6 @@ Flags:
 `balance` retrieves the balance of an account via RPC by a provided address at a predefined block height.
 It provides an implementation of the standard [eth_getBalance](https://ethereum.org/en/developers/docs/apis/json-rpc#eth_getbalance) JSON-RPC method.
 
-
 ```bash
 Usage:
   ethkit-cli balance [account] [flags]
